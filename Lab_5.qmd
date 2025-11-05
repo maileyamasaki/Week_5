@@ -1,0 +1,385 @@
+---
+title: "Lab 5: Insurance Costs"
+author: "Maile Yamasaki"
+format:
+ html:
+   theme: cosmo
+   embed-resources: true
+execute:
+ echo: true
+---
+
+Git Hub Link: https://github.com/maileyamasaki/Week_5
+
+```{python}
+import pandas as pd
+import numpy as np
+import sklearn
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import LinearRegression
+from plotnine import ggplot, geom_point, aes, geom_boxplot, labs, geom_bar, geom_violin, facet_wrap, geom_smooth
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
+from sklearn.preprocessing import PolynomialFeatures
+```
+
+Part 1
+
+1.
+
+```{python}
+cost = pd.read_csv("/Users/maileyamasaki/Desktop/Cal Poly SLO/Machine Learning/Week_5/insurance_costs_1.csv")
+```
+
+```{python}
+cost.info()
+cost.describe()
+cost.isna().sum()
+```
+
+2.
+```{python}
+cost['female'] = 1 * (cost['sex'] == 'female')
+cost['smoker'] = 1 * (cost['smoker'] == 'yes')
+cost['region'] = cost['region'].astype('category')
+```
+
+3.
+```{python}
+(ggplot(cost, aes(x = 'age', y = 'charges', color = 'sex'))
++ geom_point()
+)
+```
+
+From this plot, we can see that generally, as age increases, insurance charges tend to increase. It is difficult to tell if there is a strong difference between male and female. 
+
+```{python}
+(ggplot(cost, aes(x = "bmi", y = "charges", color = "smoker"))
++ geom_point()
+)
+```
+
+From this plot, we can see that those who smoke tend to have higer charges.
+Furthermore, BMI does not have a huge effect on charges, although smokers with a high BMI see dramatically higher charges. 
+
+```{python}
+(ggplot(cost, aes(x="region", y="charges", fill = 'region'))
++geom_boxplot()
+)
+```
+
+From this plot, we can see that charges don't vary greatly amongst the 4 regions, although we do see a slightly higher distribution for the southeast region. 
+
+Part 2
+
+1.
+```{python}
+y = cost['charges']
+X1 = cost[['age']]
+
+lr_fit1 = LinearRegression()
+lr_fit1.fit(X1, y)
+
+lr_fit1.coef_
+```
+
+Interpretation: This model predicts that for every one-year increase in age, the average insurance charges are expected to increase by approximately $228, holding all other factors constant.
+
+2.
+```{python}
+y = cost['charges']
+X2 = cost[['age', 'female']]
+
+lr_fit2 = LinearRegression()
+lr_fit2.fit(X2, y)
+
+lr_fit2.coef_
+```
+
+Interpretation: This model predicts similar results to the first regression, seeing an approximate $228 increase in charges for every one-year increase in age, but now provides additional insight into how sex relates to insurance charges. Specifically, after controlling for age, females are predicted to have approximately $649 lower charges on average compared to males.
+
+3.
+```{python}
+y = cost['charges']
+X3 = cost[['age', 'smoker']]
+
+lr_fit3 = LinearRegression()
+lr_fit3.fit(X3, y)
+
+lr_fit3.coef_
+```
+
+Interpretation: This model predicts similar results to the first regression, seeing an approximate $253 increase in charges for every one-year increase in age, but now provides additional insight into how smoking relates to insurance charges. Specifically, after controlling for age, smokers are predicted to have approximately $24048 higher charges on average compared to non-smokers.
+
+4.
+```{python}
+y_pred2 = lr_fit2.predict(X2)
+mse2 = mean_squared_error(y, y_pred2)
+r2 = r2_score(y, y_pred2)
+print('MSE for model 2 =', mse2, '\nR^2 for model 2 =', r2)
+```
+
+```{python}
+y_pred3 = lr_fit3.predict(X3)
+mse3 = mean_squared_error(y, y_pred3)
+r3 = r2_score(y, y_pred3)
+print('MSE for model 3 =', mse3, '\nR^2 for model 3 =', r3)
+```
+
+Our results of MSE and R^2 tell us that our third model, running the age and smoker variables is the best fit. We see a smaller MSE and higher R^2 which is our indication of a better fit. From a contextual perspective, we see that the smoker coefficient was very large, telling us that being a smoker vs. non-smoker has a big effect on insurance charges and thus provides us a better predictor of charges than the sex of a person. 
+
+Part 3
+
+1.
+```{python}
+y = cost['charges']
+X4 = cost[['age', 'bmi']]
+
+lr_fit4 = LinearRegression()
+lr_fit4.fit(X4, y)
+
+lr_fit4.coef_
+```
+
+```{python}
+y_pred1 = lr_fit1.predict(X1)
+mse1 = mean_squared_error(y, y_pred1)
+r1 = r2_score(y, y_pred1)
+print('MSE for model 1 =', mse1, '\nR^2 for model 1 =', r1)
+```
+
+```{python}
+y_pred4 = lr_fit4.predict(X4)
+mse4 = mean_squared_error(y, y_pred4)
+r4 = r2_score(y, y_pred4)
+print('MSE for model 4 =', mse4, '\nR^2 for model 4 =', r4)
+```
+
+Our results of MSE and R^2 tell us that our fourth model, running the age and bmi variables is the best fit. We see a smaller MSE and higher R^2 which is our indication of a better fit. From a contextual perspective, we see that the bmi factor gives us good insight as to charges - a one-percent increase in bmi leads to approximately $283 more in charges. 
+
+2. 
+```{python}
+cost['age^2'] = (cost['age'])^2
+
+y = cost['charges']
+X5 = cost[['age', 'age^2']]
+
+lr_fit5 = LinearRegression()
+lr_fit5.fit(X5, y)
+
+lr_fit5.coef_
+```
+
+```{python}
+y_pred5 = lr_fit5.predict(X5)
+mse5 = mean_squared_error(y, y_pred5)
+r5 = r2_score(y, y_pred5)
+print('MSE for model 5 =', mse5, '\nR^2 for model 5 =', r5)
+print('MSE for model 1 =', mse1, '\nR^2 for model 1 =', r1)
+```
+
+Our MSE and R^2 results tell us that the fifth model, running age and age^2 provides us with a better fit that when we just used age as a predictor. 
+
+3. 
+```{python}
+y = cost['charges']
+X6 = cost[['age']]
+
+poly6 = PolynomialFeatures(degree=4, include_bias=False)
+X6_poly = poly6.fit_transform(X6)
+
+lr_fit6 = LinearRegression()
+lr_fit6.fit(X6_poly, y)
+
+y_pred6 = lr_fit6.predict(X6_poly)
+mse6 = mean_squared_error(y, y_pred6)
+r6 = r2_score(y, y_pred6)
+print('MSE for model 6 =', mse6, '\nR^2 for model 6 =', r6)
+print('MSE for model 1 =', mse1, '\nR^2 for model 1 =', r1)
+```
+
+Our MSE and R^2 results tell us that the sixth model, running a fourth degree polynomial provides us with a better fit that when we just used age as a predictor. 
+
+4.
+```{python}
+y = cost['charges']
+X7 = cost[['age']]
+
+poly7 = PolynomialFeatures(degree=12, include_bias=False)
+X7_poly = poly7.fit_transform(X7)
+
+lr_fit7 = LinearRegression()
+lr_fit7.fit(X7_poly, y)
+
+y_pred7 = lr_fit7.predict(X7_poly)
+mse7 = mean_squared_error(y, y_pred7)
+r7 = r2_score(y, y_pred7)
+print('MSE for model 7 =', mse7, '\nR^2 for model 7 =', r7)
+print('MSE for model 1 =', mse1, '\nR^2 for model 1 =', r1)
+```
+
+Our MSE and R^2 results tell us that the seventh model, running a twelfth degree polynomial provides us with a better fit that when we just used age as a predictor. 
+
+5.
+```{python}
+print('MSE for model 1 =', mse1, '\nR^2 for model 1 =', r1)
+print('MSE for model 5 =', mse5, '\nR^2 for model 5 =', r5)
+print('MSE for model 6 =', mse6, '\nR^2 for model 6 =', r6)
+print('MSE for model 7 =', mse7, '\nR^2 for model 7 =', r7)
+```
+
+Our MSE and R^2 results tell us that the sixth model, running a fourth degree polynomial, provides us with the best fit amongst each of the models. I agree that this is the best model, as model 1 (just age) and model 5 (age & age^2) underfit the model while model 7 (twelfth degree polynomial) overfits the model.
+
+6.
+```{python}
+(ggplot(cost, aes(x = "age", y = "charges"))
++ geom_point()
++ geom_smooth(method='lm', formula='y ~ x + I(x**2)+ I(x**3) + I(x**4) + I(x**5)+ I(x**6) + I(x**7)+ I(x**8)+ I(x**9) + I(x**10) + I(x**11)+ I(x**12)', se=False, color="red")
+)
+```
+
+Part 4
+```{python}
+new_cost = pd.read_csv("/Users/maileyamasaki/Desktop/Cal Poly SLO/Machine Learning/Week_5/insurance_costs_2.csv")
+```
+
+```{python}
+new_cost['female'] = 1 * (new_cost['sex'] == 'female')
+new_cost['smoker'] = 1 * (new_cost['smoker'] == 'yes')
+new_cost['region'] = new_cost['region'].astype('category')
+```
+
+Age
+```{python}
+y = cost['charges']
+X8 = cost[['age']]
+
+lr_fit8 = LinearRegression()
+lr_fit8.fit(X8, y)
+
+X8_new = new_cost[['age']]
+y = new_cost['charges']
+
+y_pred8 = lr_fit8.predict(X8_new)
+
+mean_squared_error(y, y_pred8)
+```
+
+Age & BMI
+```{python}
+y = cost['charges']
+X9 = cost[['age', 'bmi']]
+
+lr_fit9 = LinearRegression()
+lr_fit9.fit(X9, y)
+
+X9_new = new_cost[['age', 'bmi']]
+y = new_cost['charges']
+
+y_pred9 = lr_fit9.predict(X9_new)
+
+mean_squared_error(y, y_pred9)
+```
+
+Age, BMI, & Smoker
+```{python}
+y = cost['charges']
+X10 = cost[['age', 'bmi', 'smoker']]
+
+lr_fit10 = LinearRegression()
+lr_fit10.fit(X10, y)
+
+X10_new = new_cost[['age', 'bmi', 'smoker']]
+y = new_cost['charges']
+
+y_pred10 = lr_fit10.predict(X10_new)
+
+mean_squared_error(y, y_pred10)
+```
+
+Age, BMI, Age*Smoker, & BMI*Smoker
+```{python}
+y = cost['charges']
+X11 = cost[['age', 'bmi']].copy()
+X11['age_smoker'] = cost['age'] * cost['smoker']
+X11['bmi_smoker'] = cost['bmi'] * cost['smoker']
+
+lr_fit11 = LinearRegression()
+lr_fit11.fit(X11, y)
+
+X11_new = new_cost[['age', 'bmi']].copy()
+X11_new['age_smoker'] = cost['age'] * cost['smoker']
+X11_new['bmi_smoker'] = cost['bmi'] * cost['smoker']
+y = new_cost['charges']
+
+y_pred11 = lr_fit11.predict(X11_new)
+
+mean_squared_error(y, y_pred11)
+```
+
+Age, BMI, Smoker, Age*Smoker, & BMI*Smoker
+```{python}
+y = cost['charges']
+X12 = cost[['age', 'bmi', 'smoker']].copy()
+X12['age_smoker'] = cost['age'] * cost['smoker']
+X12['bmi_smoker'] = cost['bmi'] * cost['smoker']
+
+lr_fit12 = LinearRegression()
+lr_fit12.fit(X12, y)
+
+X12_new = new_cost[['age', 'bmi', 'smoker']].copy()
+X12_new['age_smoker'] = cost['age'] * cost['smoker']
+X12_new['bmi_smoker'] = cost['bmi'] * cost['smoker']
+
+y = new_cost['charges']
+
+y_pred12 = lr_fit12.predict(X12_new)
+
+mean_squared_error(y, y_pred12)
+```
+
+Based on the MSE of each of these models, we see the best fit is the model using age, BMI, and smoker as our predictors. 
+
+Residual Plot
+```{python}
+residuals = y - y_pred10
+
+plt.scatter(y_pred10, residuals)
+plt.xlabel("Predicted Charges")
+plt.ylabel("Residuals")
+plt.show()
+```
+
+Part 5
+
+Best Fit Model: Age, BMI, Smoker, Age*BMI
+```{python}
+y = cost['charges']
+X13 = cost[['age', 'bmi', 'smoker']].copy()
+X13['age_bmi'] = cost['age'] * cost['bmi']
+
+lr_fit13 = LinearRegression()
+lr_fit13.fit(X13, y)
+
+X13_new = new_cost[['age', 'bmi', 'smoker']].copy()
+X13_new['age_bmi'] = cost['age'] * cost['bmi']
+y = new_cost['charges']
+
+y_pred13 = lr_fit13.predict(X13_new)
+
+mean_squared_error(y, y_pred13)
+```
+
+Residual Plot
+```{python}
+residuals = y - y_pred13
+
+plt.scatter(y_pred13, residuals)
+plt.xlabel("Predicted Charges")
+plt.ylabel("Residuals")
+plt.show()
+```
